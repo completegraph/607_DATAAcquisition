@@ -1,0 +1,83 @@
+Type,ccode,Circumstance
+Events,01,Aggravated pre-existing condition
+Events,02,Apprehending/removing from property
+Events,03,Assaulted by other
+Events,04,Assaulted by coworker
+Events,05,"Bitten/stung by bee, spider, other insect"
+Events,06,Bitten by animal
+Events,07,"Bodily function/sudden movement, e.g., sneezing, twisting"
+Events,08,Caught in or compressed by hand tools
+Events,09,Caught in or compressed by other machinery
+Events,10,Caught in or crushed by materials
+Events,11,"Caught in or crushed in excavation, land slide, cave-in, etc."
+Events,12,Caught in or compressed by powered hand tools
+Events,13,"Cave in, slide, etc."
+Events,14,"Climatic conditions, other (e.g., high winds)"
+Events,15,"Climatic condition, exposure to environmental heat"
+Events,16,"Climatic condition, exposure to environmental cold"
+Events,17,Collision - between on track equipment
+Events,18,"Collision/impact - auto, truck, bus, van, etc."
+Events,19,Committing vandalism/theft
+Events,20,Defective/malfunctioning equipment
+Events,21,Derailment
+Events,22,Electrical shock while operating welding equipment
+Events,23,"Electrical shock due to contact with 3rd rail, catenary, pantograph"
+Events,24,"Electrical shock, other"
+Events,25,Electrical shock from hand tool
+Events,26,Exposure to fumes - inhalation
+Events,27,Exposure to chemicals - external
+Events,28,Exposure to poisonous plants
+Events,29,Exposure to noise over time
+Events,30,Exposure to noise - single incident
+Events,31,Exposure to welding light
+Events,32,Highway-rail collision/impact
+Events,33,"Horseplay, practical joke, etc"
+Events,34,Lost balance
+Events,35,"Missed handhold, grabiron, step, etc."
+Events,36,Needle puncture/prick/stick
+Events,37,Other impacts - on track equipment
+Events,38,Overexertion
+Events,39,Pushed/shoved into/against
+Events,40,Pushed/shoved onto
+Events,41,Pushed/shoved from
+Events,42,Ran into on-track equipment
+Events,43,Ran into object/equipment
+Events,44,Repetitive motion - work processes
+Events,45,"Repetitive motion - typing, keyboard, etc"
+Events,46,Repetitive motion - tools
+Events,47,Repetitive motion - other
+Events,48,"Rubbed, abraded, etc."
+Events,49,Shot
+Events,50,"Slack action, draft, compressive"
+Events,51,"Slipped, fell, stumbled, etc. due to irregular surface, e.g., depression, slope, etc."
+Events,52,"Slipped, fell, stumbled, etc. due to climatic condition (rain, snow, ice, etc."
+Events,53,"Slipped, fell, stumbled, etc. on oil, grease, other slippery substance"
+Events,54,"Slipped, fell, stumbled, etc. due to object, e.g.,ballast, spike, material, etc."
+Events,55,"Stabbing, knifing, etc."
+Events,56,Stepped on object
+Events,57,Struck by thrown or propelled object
+Events,58,Struck by object
+Events,59,Struck by on-track equipment
+Events,60,Struck by falling object
+Events,61,Struck against object
+Events,62,Sudden release of air
+Events,63,Sudden/unexpected movement of material
+Events,64,Sudden/unexpected movement of on-track equipment
+Events,65,Sudden/unexpected movement of vehicle
+Events,66,Sustained viewing
+Events,67,Thrill seeking
+Events,68,"Caught, crushed, pinched, other"
+Events,69,"On track equipment, other incidents"
+Events,70,"Slipped, fell, stumbled, other"
+Events,71,"Sudden, unexpected movement, other"
+Events,72,Bumped
+Events,73,Burned
+Events,74,Blowing/falling debris
+Events,75,Sudden/Unexpected Movement of tools
+Events,76,Struck by Own Remote Control Locomotive Controlled Equipment
+Events,77,Struck by Other Remote Control Locomotive Controlled Equipment
+Events,79,Caught Between Machinery
+Events,80,Slack adjustment during switching operation
+Events,81,Caught Between Equipment
+Events,82,Caught Between Material
+Events,99,Other (describe in narrative)

@@ -1,0 +1,261 @@
+---
+title: "Project 2- LIRR Railroad Human Casualties in 2018"
+author: "Alexander Ng"
+date: "March 10, 2019"
+output:
+  html_document:
+    df_print: paged
+    highlight: pygments
+    number_sections: yes
+    theme: readable
+    toc: yes
+    toc_depth: 2
+  pdf_document:
+    toc: yes
+    toc_depth: 2
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(lubridate)
+```
+# Overview: Railroad Casualties on the Long Island Railroad
+
+The Long Island Railroad (LIRR) is one of the 4 major railroad systems serving the New York City metropolitan area.
+It serves the southeastern part of NY State from Manhattan to the eastern tip of Suffolk County on Long Island.
+Founded in 1834, the train system remains the busiest commuter railroad system in North America.  
+<https://en.wikipedia.org/wiki/Long_Island_Rail_Road>
+
+This project will gather, wrangle and model the LIRR 2018 railroad casualties data from the Federal Railroad Administration (FRA) Office of Safety Analysis.  In the next section, I outline the nature of the dataset gather from the FRA.  The physical file and some of its complications are discussed in the following section.  Finally, a data model and data wrangling is undertaken.  A brief report and summary statistics round out the discussion.
+
+## Overview of Railroad Data
+
+The Federal Railroad Administration has regulatory oversight of all railroads in the United States including the LIRR.
+FRA by Federal regulation requires all accidents, deaths and incidents to be reported through an incident filing process.
+There are several types of incident forms required.  Our project focuses on one Form 6180.55A which is used for Railroad casualties.
+
+
+```{r form-screenshot, echo=FALSE , fig.cap="Form 6180.55A Defines Data Collection of Human Casualties" }
+knitr::include_graphics("FRA_Form618055A.png")
+```
+
+One can gather the casualty data from an online portal where the data is publicly available.   
+The FRA attempts to assist both railroads to meet their reporting obligations and the public in its right to information.
+
+<https://safetydata.fra.dot.gov/OfficeofSafety/publicsite/on_the_fly_download.aspx>
+
+
+```{r industrial-screenshot, echo=FALSE , fig.cap="FRA Download Site for Incident Data" }
+knitr::include_graphics("FRA_Download.png")
+```
+
+
+We filtered on just the LIRR for the 2018 calendar year.  The file was downloaded in CSV format and follows a standard precanned format.
+The actual data will be parsed from an ASCII file named "142913142942030.csv" that was downloaded from the above link.
+Each row of the ASCII file describes the contents of a Form 6180.55A incident report.
+
+The LIRR reported 462 incidents in 2018.  The downloaded file has 50 columns.
+
+There are several complications worth noting below
+
+### Choosing the Data Columns of Interest
+
+The data file contains numerous columns but only a select number of those will be of interest for my purposes.
+So we are going to boil down the relevant data to a small subset of columns.
+The data descriptions below come from the reference materials provided by the FRA in the form of a data file specification for the output.
+
+
+```{r echo=FALSE}
+
+data_cols = c("IMO","RAILROAD", "INCDTNO", "TYPPERS", "CASFATAL", "DAY", "YEAR4",
+              "COUNTY",  "EVENT", "NARR1", "NARR2", "NARR3" , "LATITUDE", "LONGITUD" )
+
+data_desc = c("Incident Month",
+              "Railroad Code" ,
+              "Railroad assigned number" ,
+              "Type of person whose injury is being reported (See Codes)",
+              "Fatality: Yes or No ",
+              "Day of incident",
+              "4 digit year of incident" ,
+              "County" ,
+              "Event code for what caused the injury" ,
+              "Narrative 1",
+              "Narrative 2 continuation of 1", 
+              "Narrative 3 continuation of 2",
+              "Latitude in decimal degrees WGS84" ,
+              "Longitude in decimal degrees WGS84" )
+
+data_dict = tibble( data_cols = data_cols, data_desc = data_desc )
+
+knitr::kable(data_dict )
+```
+
+
+### Some Data Is Spread Out
+
+Some issues are obvious.  The incident date is not a field of the data file.  Instead, the year, month, day are scattered from multiple non-adjacent fields.   The incident narrative is often the most useful description of the event.  This is split across 3 text columns called Narr1, Narr2, Narr3.   The reason for this split is probably historical to allow backward compatibility.   The Form is revised periodically to gather new data demands.   This makes legacy Form 6180.55a filings obselete in format.   The length of the narrative has expanded over time as computing power and storage has increased.  Thus we see that narrative fields being used to split a single narrative into 3 components for storage.
+
+### Many Attributes are Foreign Keys
+
+2 of the columns (TYPPERS,  EVENT) will require cross reference to other FRA data tables to figure out what is meant
+Luckily, these other data tables are available to download in csv or Excel format to allow cross references.
+
+## Defining Tidy Data
+
+Tidy data requires clearly defining an observation.
+It requires ensuring each column is a variable and each row is an observation.
+
+In this case, we define each observation as being comprised of:
+
+* A filed incident report and the information it contains therein.
+
+We also need to define supplementary data tables to fully construct the data model.
+
+* A data table of person type
+* A data table of events causing incidents
+
+## Location of the Data Files
+
+There are several files associated with the study.
+* RMD File is on github
+* Raw data file is likewise.
+* 3 Output files are on github to represent normalized tidy data
+* HTML report is on RPubs.
+
+
+```{r warning=FALSE, message=FALSE}
+library(readr)
+
+urlFile = "https://raw.githubusercontent.com/completegraph/607_DATAAcquisition/master/1429413142942030.csv"
+csv_data <- read_csv(urlFile)
+
+```
+
+## Wrangling the Data File
+
+Let us choose only the columns of interest from the raw data frame.  These are going to be the ones we specified earlier.
+
+```{r}
+
+csv_data %>% select( one_of( data_cols ) ) %>% # a clever way to specific column names in a vector of string
+          unite("narrative", c("NARR1", "NARR2", "NARR3") ) %>%   # Combine the 3 narrative columns
+          mutate( incident_date = make_date(YEAR4, IMO, DAY) ) %>%    # construct the incident date using lubridate
+          select( -DAY, -YEAR4, -IMO) %>%   # drop the legacy date fragments
+          select(incident_date, INCDTNO, everything()) %>%   # put the incident date and identifier in front of the rest
+          arrange( incident_date) -> tidydata   # sort chronlogically
+
+
+str(tidydata)
+
+```
+
+## Supplementary Codes and Files
+
+Because the report is very large, we selectively illustrate the use of supplementary codes with two values:  Event and Person Type.
+
+They are really supporting data tables for the primary one involves incident reporting. However, they also represent a form of data standardization and governance over the problem domain.  We will briefly describe each value and then wrangle those data sets to allow joins with the primary data set.
+
+**Event** refers to the event which caused the injury.  It is defined in Appendix F of the FRA Guide for preparing incident reports.
+The data dictionary for Events show 82 ranging from animal bites (Event 6) to horseplay and practical jokes (Event 33) to stabbing and knifing (Event 55).   To develop effective reporting and analysis, the codes used in the tidy data set must be converted to human readable format by cross referencing all codes with the human readable counterparts.
+
+```{r}
+library(readxl)
+urlFileName = "https://raw.githubusercontent.com/completegraph/607_DATAAcquisition/master/appendix%20F%20-%20events.csv"
+
+events_data = read_csv(urlFileName)
+
+```
+
+There is no external data source for person codes.  So we type the data manually from the PDF documentation.  Luckily there are only 10 types of people.
+
+```{r}
+
+persons = LETTERS[1:10]
+
+person_desc = c("worker on duty-employee",
+                "employee not on duty",
+                "passenger on train" ,
+                "nontrepassers-on railroad property" ,
+                "trespassers" ,
+                "worker on duty - contractor" ,
+                "contractor - other" ,
+                "worker on duty - volunteer" ,
+                "volunteer - other" ,
+                "nontrespassers-off railroad property" )
+
+person_types = tibble( persons = persons, person_desc = person_desc )
+
+
+```
+
+
+Adding events information to replace the Events code giving the following set of transformations:
+
+```{r}
+
+tidydata %>% left_join(events_data, by = c("EVENT" = "ccode")) %>%
+            select(-Type)  %>%
+            select(incident_date:EVENT, Circumstance, everything() ) %>%
+            arrange( EVENT) %>%
+            left_join(person_types, by = c("TYPPERS" = "persons") ) -> tidy_enhanced
+
+tidy_enhanced %>% filter(incident_date == "2018-05-03") -> sample_rows
+
+knitr::kable(sample_rows)
+
+```
+
+## Exporting the Data
+
+To define the data in a tidy format, we require exporting each of the 3 normalized data frames into flat file.
+
+```{r}
+
+write_csv(tidydata, "Tidy_LIRR_Railroad_Incidents_2018.csv" )
+write_csv(person_types, "Tidy_Person_Types.csv")
+write_csv(events_data, "Tidy_Events_data.csv")
+
+```
+
+## Exploring the Data
+
+We will illustrate three exploratory data analyses with the enhanced data set.
+
+* How are incidents distributed amongst the counties served by LIRR?  
+* What incidents were fatal and how did the events contribute to fatality?
+* What was the most frequent type of incident by event?
+
+```{r}
+
+tidy_enhanced %>% group_by( COUNTY ) %>% summarize( count= n() ) %>% arrange( desc(count))
+
+
+```
+
+From the above table, we see that most frequent incidents occurred in Queens.
+
+```{r}
+tidy_enhanced %>% filter( CASFATAL == "Y") %>% group_by(Circumstance, COUNTY) %>% summarize( n() )
+
+tidy_enhanced %>% filter( CASFATAL == "Y")%>% summarize( n() )
+```
+
+From the above, we see that there were 23 fatal incidents in 2018 distributed roughly evenly between Queens, Nassau and Suffolk County.
+Kings County had no fatalities.
+
+```{r}
+tidy_enhanced %>% group_by( Circumstance, person_desc ) %>% summarize( count = n() )  %>% arrange( desc( count) ) %>% filter( count > 10 )-> top_event_types
+  
+knitr::kable(top_event_types)
+```
+
+## Conclusion
+
+Tidy data allows the rapid and flexible analysis of the data.  However, supplementary data is still required to do useful interpretation or joining.
+For the LIRR data example, we find a moderate number of data corrections needed but a significant amount of business analysis is still required to make sense of the information.
+
+
+

@@ -1,0 +1,168 @@
+---
+title: "Project 2- Infrequently Reported Notifiable Diseases - 2014"
+author: "Alexander Ng"
+date: "March 10, 2019"
+output:
+  html_document:
+    df_print: paged
+    highlight: pygments
+    number_sections: yes
+    theme: readable
+    toc: yes
+    toc_depth: 2
+  pdf_document:
+    toc: yes
+    toc_depth: 2
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(lubridate)
+```
+
+# Overview: Infrequently Reported Notifiable Diseases
+
+The US Centers for Disease Control publishes a range of data sets.  It also has a role in the monitoring of diseases nationwide.  One such process is the National Notifiable Diseases Surveillance System (NNDSS).   The NNDSS monitors about 120 diseases.   These diseases range from Zika to E. coli and rabies. The dataset we will consider is the NNDSS report on infrequently reported notifiable diseases.  These are diseases for which less than 1000 cases are reported annually.  <https://wwwn.cdc.gov/nndss/document/NNDSS-Fact-Sheet-508.pdf>
+
+In this exercise, we will download, parse and tidy the data file for use in data analysis.
+
+## Overview of the data file.
+
+The data file is provided at the NNDSS data portal:  <https://data.cdc.gov/NNDSS/NNDSS-Table-I-infrequently-reported-notifiable-dis/5fyu-rtk3>
+
+
+```{r form-screenshot, echo=FALSE , fig.cap="CDC Page for Infrequently Reported Notifiable Diseases" }
+knitr::include_graphics("CDC_Website.png")
+```
+
+
+
+## Defining Tidy Data
+
+Tidy data requires clearly defining an observation.
+It requires ensuring each column is a variable and each row is an observation.
+
+## Location of the Data Files
+
+We download the data file from the CDC to freeze its content for reproducibility of this analysis.  It is copied to github.
+
+```{r warning=FALSE, message=FALSE}
+library(readr)
+
+urlFile = "https://raw.githubusercontent.com/completegraph/607_DATAAcquisition/master/NNDSS_-_Table_I._infrequently_reported_notifiable_diseases.csv"
+csv_data <- read_csv(urlFile)
+
+knitr::kable( csv_data[c(1:4), ])
+```
+
+## Wrangling the Data File
+
+Let us first clean the non-ASCII characters in the raw data file.  
+There are characters representing UTF8 characters section number 0xA7 and paragraph mark 0xB6 that should be cleansed from the raw data.
+Using **str_replace_all** we are able to remove these non-ASCII characters.
+
+```{r}
+
+Disease_Ascii_only = str_replace_all( csv_data$Disease, "(\xB6|\xA7|\x86)", "") 
+
+csv_data$Disease = Disease_Ascii_only
+
+knitr::kable(csv_data[c(10:13), ])
+
+```
+
+
+Next, the data file is wide but it really captures two types of information:
+
+a) current period information about the cumulative cases of each reportable diseases.  This includes several data elements:  current week cases and 5 year average case counts.
+b) revision history of the prior year's cumulative cases for each reportable diseases.  
+
+The two types of information are different in composition and should therefore be regarded as distinct observations.
+
+Thus, we expect to separate the initial data table into two related but distinct data sets.
+Let us use only the historical data for year 2013.  
+Note that the current year is defined as 2014 and historical weekly cases counts are provided for each week of 2014 from 1 to 53.
+
+We rename the columns to remove typos, extra spaces and year specific dependencies which make the data untidy.
+
+```{r}
+data2013 = csv_data[c(1,2,3,10)]  # Keep the disease, MMWR year, MMWR week, Total Cases Reported 2013
+
+colnames(data2013) = c("DISEASE", "MMWR_YEAR", "MMWR_WEEK", "TOTAL_CASES")
+
+data2014 = csv_data[c(1,2,3,4,6,8)] # Keep the disease, MMWR year, MMWR week, Current week, Cum 2014, 5 year weekly average
+
+colnames(data2014) = c("DISEASE", "MMWR_YEAR", "MMWR_WEEK", "CURRENT_WEEK", "YTD_CASES", "AVERAGE_5Y" )
+
+
+```
+
+Here are the top 4 rows of each set of tables.
+```{r}
+knitr::kable(data2013[c(1:4),])
+knitr::kable(data2014[c(1:4),])
+```
+
+
+## Exporting the Data
+
+To define the data in a tidy format, we require exporting 2 files of the observation data.
+
+```{r}
+
+write_csv(data2013, "Tidy_NNDSS_Infrequent_2013_2014.csv" )
+
+write_csv(data2014, "Tidy_NNDSS_Infrequent_2014_2014.csv" )
+
+```
+
+## Exploring the Data
+
+We will illustrate three exploratory data analyses with the enhanced 2014 data set.
+
+* What is the top 10 frequently reported diseases for 2014 in week 53 (i.e. at year's end)?
+* How many diseases had no cases reported in 2014?
+* What is the average number of cases in week 53 of diseases with non-zero case count?
+
+
+```{r}
+
+data2014 %>% filter( MMWR_WEEK== 53) %>% arrange( desc( YTD_CASES ) ) %>% 
+  select( DISEASE, YTD_CASES ) %>% top_n(10, YTD_CASES)
+
+```
+Clearly, the above results show Listeriosis and measles lead the pack.
+
+
+```{r}
+
+data2014 %>% filter( MMWR_WEEK== 53 , YTD_CASES < 20)  %>% 
+  arrange( YTD_CASES) %>% 
+  select( DISEASE, YTD_CASES ) %>% 
+  top_n(-10, YTD_CASES)
+
+```
+
+From the above table, we see that even historically eradicated diseases seem to be making a resurgence.
+There was 1 cases of human rabies.   Though, the plague had 5 cases in 2014.
+
+
+```{r}
+
+data2014 %>% filter( MMWR_WEEK == 53 , YTD_CASES > 0 ) %>%
+    summarise( cases_per_year = mean( YTD_CASES, na.rm = TRUE ))
+
+```
+Thus, among these 55 diseases, the average number of cases per year is ~112 in 2014.
+
+
+## Conclusion
+
+In this scenario, the data was already mostly tidy.  Except for the clean-up of column headers and non-ASCII characters, the data is structured in a usable way.
+What the data does not tell us is the social importance of each disease.  Clearly, a disease with high mortality and rapid growth in cases requires urgent resources and preventative measures.   In this regard, frequency data is insufficient.
+
+There are 5 files associated with this component of the project.  They are uploaded to Github or RPubs.
+

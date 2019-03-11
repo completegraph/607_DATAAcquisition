@@ -1,0 +1,11 @@
+persons,person_desc
+A,worker on duty-employee
+B,employee not on duty
+C,passenger on train
+D,nontrepassers-on railroad property
+E,trespassers
+F,worker on duty - contractor
+G,contractor - other
+H,worker on duty - volunteer
+I,volunteer - other
+J,nontrespassers-off railroad property
